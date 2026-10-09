@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>GitHub Desktop</title>
+    <meta charset="UTF-8" />
+    <!--
+      The compatibility shim must evaluate before renderer.js. It is emitted
+      by the `tauri-shim` webpack entry but injected here without `defer`:
+      blocking scripts run during parsing, deferred ones only after the
+      document has finished parsing, so this ordering is guaranteed.
+    -->
+    <script src="tauri-shim.js"></script>
+  </head>
+  <body>
+    <div id="desktop-app-container"></div>
+  </body>
+</html>

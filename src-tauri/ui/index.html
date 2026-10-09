@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GitHub Desktop (Tauri)</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --fg: #1f2328;
+        --bg: #ffffff;
+        --muted: #656d76;
+        --border: #d0d7de;
+        --accent: #1f883d;
+        --code-bg: #f6f8fa;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --fg: #e6edf3;
+          --bg: #0d1117;
+          --muted: #8b949e;
+          --border: #30363d;
+          --accent: #238636;
+          --code-bg: #161b22;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        padding: 32px;
+      }
+      h1 {
+        font-size: 22px;
+        margin: 0 0 4px;
+      }
+      p.subtitle {
+        margin: 0 0 24px;
+        color: var(--muted);
+      }
+      .grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 24px;
+      }
+      button {
+        font: inherit;
+        padding: 6px 12px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--code-bg);
+        color: var(--fg);
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--accent);
+      }
+      button.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+      #status {
+        font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+        font-size: 12px;
+        background: var(--code-bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 12px;
+        min-height: 160px;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      h2 {
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+        margin: 24px 0 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>GitHub Desktop</h1>
+    <p class="subtitle">
+      Tauri shell smoke test — exercises the IPC bridge
+      (<code>desktop_invoke</code> / <code>desktop_send</code>) that replaces
+      Electron's <code>ipcRenderer</code>.
+    </p>
+
+    <div class="grid">
+      <button class="primary" data-channel="get-path">get-path(home)</button>
+      <button data-channel="get-app-architecture">get-app-architecture</button>
+      <button data-channel="get-guid">get-guid</button>
+      <button data-channel="is-window-maximized">is-window-maximized</button>
+      <button data-channel="should-use-dark-colors">should-use-dark-colors</button>
+      <button data-channel="show-open-dialog">show-open-dialog</button>
+      <button data-channel="show-save-dialog">show-save-dialog</button>
+      <button data-action="notify">show-notification</button>
+      <button data-action="external">open-external</button>
+      <button data-action="clipboard">write-clipboard-text</button>
+      <button data-action="trash">move-to-trash(tmp)</button>
+    </div>
+
+    <div class="grid">
+      <button data-send="minimize-window">minimize</button>
+      <button data-send="maximize-window">maximize</button>
+      <button data-send="unmaximize-window">unmaximize</button>
+      <button data-send="set-window-zoom-factor:1.25">zoom 125%</button>
+      <button data-send="set-window-zoom-factor:1">zoom 100%</button>
+      <button data-action="quit">quit-app</button>
+    </div>
+
+    <h2>Bridge results</h2>
+    <div id="status">ready.</div>
+
+    <h2>Events received from Rust</h2>
+    <div id="events">listening…</div>
+
+    <script>
+      const statusEl = document.getElementById('status')
+      const eventsEl = document.getElementById('events')
+      const tauri = window.__TAURI__
+      const log = (line) => {
+        statusEl.textContent = `${line}\n${statusEl.textContent}`.slice(0, 4000)
+      }
+      const logEvent = (line) => {
+        eventsEl.textContent = `${line}\n${eventsEl.textContent}`.slice(0, 4000)
+      }
+
+      if (!tauri) {
+        log('ERROR: window.__TAURI__ is not available (withGlobalTauri off?)')
+      }
+
+      const invoke = (channel, args = []) =>
+        tauri.core.invoke('desktop_invoke', { channel, args })
+      const send = (channel, args = []) =>
+        tauri.core.invoke('desktop_send', { channel, args })
+
+      // Bridge result buttons: read the data-channel name off the button
+      document.querySelectorAll('button[data-channel]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const channel = button.dataset.channel
+          const args = channel === 'get-path' ? ['home'] : []
+          try {
+            const result = await invoke(channel, args)
+            log(`${channel} → ${JSON.stringify(result)}`)
+          } catch (e) {
+            log(`${channel} → ERROR ${e}`)
+          }
+        })
+      })
+
+      // Simplex (fire-and-forget) buttons
+      document.querySelectorAll('button[data-send]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const [channel, value] = button.dataset.send.split(':')
+          const args = value !== undefined ? [Number(value)] : []
+          try {
+            await send(channel, args)
+            log(`${channel} → sent`)
+          } catch (e) {
+            log(`${channel} → ERROR ${e}`)
+          }
+        })
+      })
+
+      document
+        .querySelector('[data-action="notify"]')
+        .addEventListener('click', async () => {
+          try {
+            const result = await invoke('show-notification', [
+              'GitHub Desktop',
+              'Hello from the Tauri IPC bridge',
+            ])
+            log(`show-notification → ${JSON.stringify(result)}`)
+          } catch (e) {
+            log(`show-notification → ERROR ${e}`)
+          }
+        })
+
+      document
+        .querySelector('[data-action="external"]')
+        .addEventListener('click', async () => {
+          try {
+            const result = await invoke('open-external', [
+              'https://docs.github.com/desktop',
+            ])
+            log(`open-external → ${JSON.stringify(result)}`)
+          } catch (e) {
+            log(`open-external → ERROR ${e}`)
+          }
+        })
+
+      document
+        .querySelector('[data-action="clipboard"]')
+        .addEventListener('click', async () => {
+          try {
+            await invoke('write-clipboard-text', [
+              'copied from GitHub Desktop (Tauri)',
+            ])
+            log('write-clipboard-text → ok, paste to verify')
+          } catch (e) {
+            log(`write-clipboard-text → ERROR ${e}`)
+          }
+        })
+
+      document
+        .querySelector('[data-action="trash"]')
+        .addEventListener('click', async () => {
+          try {
+            const path = await tauri.core.invoke('smoke_create_temp_file')
+            log(`created ${path}`)
+            await invoke('move-to-trash', [path])
+            log('move-to-trash → ok')
+          } catch (e) {
+            log(`move-to-trash → ERROR ${e}`)
+          }
+        })
+
+      document
+        .querySelector('[data-action="quit"]')
+        .addEventListener('click', () => send('quit-app'))
+
+      // Backend → frontend events over the original Electron channel names
+      const channels = [
+        'focus',
+        'blur',
+        'window-state-changed',
+        'native-theme-updated',
+        'menu-event',
+      ]
+      channels.forEach((name) => {
+        tauri.event.listen(name, (event) => {
+          logEvent(`${name} ${JSON.stringify(event.payload)}`)
+        })
+      })
+
+      log('bridge ready: window.__TAURI__ present')
+    </script>
+  </body>
+</html>
