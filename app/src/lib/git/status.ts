@@ -17,6 +17,7 @@ import {
   IStatusHeader,
   isStatusHeader,
   isStatusEntry,
+  isIgnoredEntry,
 } from '../status-parser'
 import { DiffSelectionType, DiffSelection } from '../../models/diff'
 import { Repository } from '../../models/repository'
@@ -214,6 +215,10 @@ export async function getStatus(
     'status',
     ...(includeUntracked ? ['--untracked-files=all'] : []),
     '--branch',
+    // `--ignored=matching` lists each ignored path matching an ignore
+    // pattern. Ignored directories that are ignored as a whole are collapsed
+    // to a single entry rather than expanded into every file inside them.
+    '--ignored=matching',
     '--porcelain=2',
     '-z',
   ]
@@ -233,6 +238,7 @@ export async function getStatus(
   const parsed = parsePorcelainStatus(stdout)
   const headers = parsed.filter(isStatusHeader)
   const entries = parsed.filter(isStatusEntry)
+  const ignoredEntries = parsed.filter(isIgnoredEntry)
 
   const mergeHeadFound = await isMergeHeadSet(repository)
   const conflictedFilesInIndex = entries.filter(e =>
@@ -266,7 +272,17 @@ export async function getStatus(
     match: null,
   })
 
-  const workingDirectory = WorkingDirectoryStatus.fromFiles([...files.values()])
+  const workingDirectory = WorkingDirectoryStatus.fromFiles(
+    [...files.values()],
+    ignoredEntries.map(
+      entry =>
+        new WorkingDirectoryFileChange(
+          entry.path,
+          { kind: AppFileStatusKind.Ignored },
+          DiffSelection.fromInitialSelection(DiffSelectionType.None)
+        )
+    )
+  )
 
   const isCherryPickingHeadFound = await isCherryPickHeadFound(repository)
 

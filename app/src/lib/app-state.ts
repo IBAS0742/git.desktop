@@ -68,6 +68,7 @@ import { RepoRulesInfo } from '../models/repo-rules'
 import { IAPIRepoRuleset } from './api'
 import { ICustomIntegration } from './custom-integration'
 import { Emoji } from './emoji'
+import { SupportedLanguage } from './i18n'
 import { IUpdateState } from '../ui/lib/update-store'
 
 export enum SelectionType {
@@ -400,6 +401,9 @@ export interface IAppState {
 
   /** Whether the user prefers absolute dates over relative time in lists */
   readonly preferAbsoluteDates: boolean
+
+  /** The language used to render the user interface */
+  readonly language: SupportedLanguage
 
   /**
    * Cached repo rulesets. Used to prevent repeatedly querying the same
@@ -888,6 +892,9 @@ export interface IFileListFilterState {
 
   /** Whether to filter and show only deleted files */
   readonly isDeletedFile: boolean
+
+  /** Whether to show ignored files and directories in the changes list */
+  readonly showIgnoredFiles: boolean
 }
 
 /**

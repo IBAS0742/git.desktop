@@ -63,6 +63,12 @@ function formatPatchHeaderForFile(file: WorkingDirectoryFileChange) {
     // that work needs to be done waaaaaaaay before we get to this point.
     case AppFileStatusKind.Conflicted:
       return formatPatchHeader(file.path, file.path)
+    // Ignored files can never be part of a commit, so they have no valid patch
+    // header. Reaching this is a programming error.
+    case AppFileStatusKind.Ignored:
+      throw new Error(
+        `Cannot format a patch header for ignored file ${file.path}`
+      )
     default:
       return assertNever(file.status, `Unknown file status ${file.status}`)
   }

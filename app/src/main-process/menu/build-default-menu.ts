@@ -54,6 +54,7 @@ export function buildDefaultMenuTemplate({
   isStashedChangesVisible = false,
   askForConfirmationWhenStashingAllChanges = true,
   isChangesFilterVisible = true,
+  language = 'en',
 }: MenuLabelsEvent): Electron.MenuItemConstructorOptions[] {
   contributionTargetDefaultBranch = truncateWithEllipsis(
     contributionTargetDefaultBranch,
@@ -623,6 +624,27 @@ export function buildDefaultMenuTemplate({
       ],
     })
   }
+
+  template.push({
+    label: __DARWIN__ ? 'Language' : '&Language',
+    id: 'language',
+    submenu: [
+      {
+        label: 'English',
+        id: 'set-language-en',
+        type: 'radio',
+        checked: language === 'en',
+        click: emit('set-language-en'),
+      },
+      {
+        label: '中文',
+        id: 'set-language-zh',
+        type: 'radio',
+        checked: language === 'zh',
+        click: emit('set-language-zh'),
+      },
+    ],
+  })
 
   ensureItemIds(template)
 

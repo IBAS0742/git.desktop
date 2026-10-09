@@ -17,12 +17,16 @@ interface IChangedFileProps {
   readonly disableSelection: boolean
   readonly checkboxTooltip?: string
   readonly focused: boolean
+  /** The depth of the file within the file tree, zero being the root */
+  readonly depth?: number
   /** The characters in the file path to highlight */
   readonly matches?: IMatches
   readonly onIncludeChanged: (
     file: WorkingDirectoryFileChange,
     include: boolean
   ) => void
+  /** Whether this file is ignored via .gitignore */
+  readonly isIgnored?: boolean
 }
 
 /** a changed file in the working directory for a given repository */
@@ -53,7 +57,10 @@ export class ChangedFile extends React.Component<IChangedFileProps, {}> {
     } = this.props
     const { status, path } = file
     const fileStatus = mapStatus(status)
+    const isIgnored = this.props.isIgnored === true
 
+    const depth = this.props.depth ?? 0
+    const treeIndentWidth = depth * 16
     const listItemPadding = 10 * 2
     const checkboxWidth = 20
     const statusWidth = 16
@@ -64,7 +71,8 @@ export class ChangedFile extends React.Component<IChangedFileProps, {}> {
       listItemPadding -
       checkboxWidth -
       filePadding -
-      statusWidth
+      statusWidth -
+      treeIndentWidth
 
     const includedText =
       this.props.include === true
@@ -73,27 +81,38 @@ export class ChangedFile extends React.Component<IChangedFileProps, {}> {
         ? 'partially included'
         : 'not included'
 
-    const pathScreenReaderMessage = `${path} ${mapStatus(
-      status
-    )} ${includedText}`
+    const pathScreenReaderMessage = isIgnored
+      ? `${path} ${fileStatus}`
+      : `${path} ${fileStatus} ${includedText}`
 
     return (
       <div className="file">
-        <TooltippedContent
-          tooltip={checkboxTooltip}
-          direction={TooltipDirection.EAST}
-          tagName="div"
-        >
-          <Checkbox
-            // The checkbox doesn't need to be tab reachable since we emulate
-            // checkbox behavior on the list item itself, ie hitting space bar
-            // while focused on a row will toggle selection.
-            tabIndex={-1}
-            value={this.checkboxValue}
-            onChange={this.handleCheckboxChange}
-            disabled={disableSelection}
+        {treeIndentWidth > 0 && (
+          <div
+            className="tree-indent"
+            style={{ width: treeIndentWidth }}
+            aria-hidden={true}
           />
-        </TooltippedContent>
+        )}
+        {isIgnored ? (
+          <div className="checkbox-component" aria-hidden={true} />
+        ) : (
+          <TooltippedContent
+            tooltip={checkboxTooltip}
+            direction={TooltipDirection.EAST}
+            tagName="div"
+          >
+            <Checkbox
+              // The checkbox doesn't need to be tab reachable since we emulate
+              // checkbox behavior on the list item itself, ie hitting space bar
+              // while focused on a row will toggle selection.
+              tabIndex={-1}
+              value={this.checkboxValue}
+              onChange={this.handleCheckboxChange}
+              disabled={disableSelection}
+            />
+          </TooltippedContent>
+        )}
 
         <PathLabel
           path={path}
@@ -115,6 +134,7 @@ export class ChangedFile extends React.Component<IChangedFileProps, {}> {
             className={'status status-' + fileStatus.toLowerCase()}
           />
         </TooltippedContent>
+        {isIgnored && <span className="ignored-badge">Ignored</span>}
       </div>
     )
   }

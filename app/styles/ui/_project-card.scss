@@ -1,0 +1,132 @@
+@import '../mixins';
+
+/**
+ * Wrapper for the repository foldout contents: the project card sits on top
+ * of the regular repository list.
+ */
+.repository-foldout-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: inherit;
+
+  .repository-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+  }
+}
+
+.project-card {
+  flex-shrink: 0;
+  padding: var(--spacing);
+  border-bottom: var(--base-border);
+  background: var(--box-background-color);
+
+  .project-card-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .project-card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    margin-right: var(--spacing);
+    border-radius: 6px;
+    color: #fff;
+    background-color: var(--background-color);
+  }
+
+  .project-card-titles {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .project-card-name {
+    font-weight: 600;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .project-card-description {
+    font-size: var(--font-size-sm);
+    color: var(--text-color);
+    opacity: 0.8;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+
+    &.empty {
+      font-style: italic;
+      opacity: 0.5;
+    }
+  }
+
+  .project-card-edit {
+    flex-shrink: 0;
+    margin-left: var(--spacing);
+  }
+
+  .project-card-editor {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-half);
+    margin-top: var(--spacing);
+  }
+
+  .project-card-picker-label {
+    font-size: var(--font-size-sm);
+    color: var(--text-color);
+    opacity: 0.75;
+    margin-bottom: 4px;
+  }
+
+  .project-card-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .project-card-symbol {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid var(--base-border);
+    border-radius: 4px;
+    background: var(--background-color);
+    color: var(--text-color);
+    cursor: pointer;
+
+    &:hover {
+      border-color: var(--accent-color);
+    }
+
+    &.selected {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 1px var(--accent-color);
+    }
+  }
+
+  .project-card-color {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid var(--base-border);
+    border-radius: 50%;
+    cursor: pointer;
+
+    &.selected {
+      box-shadow: 0 0 0 2px var(--background-color), 0 0 0 4px var(--accent-color);
+    }
+  }
+}

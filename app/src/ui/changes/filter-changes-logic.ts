@@ -18,6 +18,12 @@ export function applyFilterOptions(
 
   const { change } = item
 
+  // Directory rows are never shown once filtering kicks in, the flat list of
+  // matching files takes their place.
+  if (change === null) {
+    return false
+  }
+
   if (filters.isIncludedInCommit && !change.isIncludedInCommit()) {
     return false
   }

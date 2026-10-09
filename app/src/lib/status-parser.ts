@@ -6,7 +6,7 @@ import {
 } from '../models/status'
 import { splitBuffer } from './split-buffer'
 
-type StatusItem = IStatusHeader | IStatusEntry
+type StatusItem = IStatusHeader | IStatusEntry | IIgnoredEntry
 
 export interface IStatusHeader {
   readonly kind: 'header'
@@ -43,6 +43,23 @@ export function isStatusEntry(
   statusItem: StatusItem
 ): statusItem is IStatusEntry {
   return statusItem.kind === 'entry'
+}
+
+/** A parsed ignored entry from git status */
+export interface IIgnoredEntry {
+  readonly kind: 'ignored'
+
+  /**
+   * The path to the file relative to the repository root. A trailing slash
+   * denotes a directory which is ignored as a whole.
+   */
+  readonly path: string
+}
+
+export function isIgnoredEntry(
+  statusItem: StatusItem
+): statusItem is IIgnoredEntry {
+  return statusItem.kind === 'ignored'
 }
 
 const ChangedEntryType = '1'
@@ -91,7 +108,7 @@ export function parsePorcelainStatus(
     } else if (entryKind === UntrackedEntryType) {
       entries.push(parseUntrackedEntry(field))
     } else if (entryKind === IgnoredEntryType) {
-      // Ignored, we don't care about these for now
+      entries.push(parseIgnoredEntry(field))
     }
   }
 
@@ -178,6 +195,13 @@ function parseUntrackedEntry(field: string): IStatusEntry {
     statusCode: '??',
     submoduleStatusCode: '????',
     path,
+  }
+}
+
+function parseIgnoredEntry(field: string): IIgnoredEntry {
+  return {
+    kind: 'ignored',
+    path: field.substring(2),
   }
 }
 

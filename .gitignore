@@ -20,3 +20,7 @@ junit*.xml
 *.swp
 tslint-rules/
 playwright-videos/
+
+# Tauri
+/src-tauri/target
+/src-tauri/gen

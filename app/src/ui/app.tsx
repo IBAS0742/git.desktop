@@ -111,6 +111,7 @@ import { ApplicationTheme } from './lib/application-theme'
 import { RepositoryStateCache } from '../lib/stores/repository-state-cache'
 import { PopupType, Popup } from '../models/popup'
 import { OversizedFiles } from './changes/oversized-files-warning'
+import { SensitiveFilesWarning } from './changes/sensitive-files-warning'
 import { PushNeedsPullWarning } from './push-needs-pull'
 import { getCurrentBranchForcePushState } from '../lib/rebase'
 import { Banner, BannerType } from '../models/banner'
@@ -177,6 +178,12 @@ import { PullRequestReview } from './notifications/pull-request-review'
 import { getRepositoryType } from '../lib/git'
 import { SSHUserPassword } from './ssh/ssh-user-password'
 import { showContextualMenu } from '../lib/menu-item'
+import { t } from '../lib/i18n'
+import {
+  getRepositoryMetadata,
+  subscribeRepositoryMetadata,
+} from '../lib/repository-metadata'
+import { ProjectCard, getProjectSymbol } from './repositories-list/project-card'
 import { UnreachableCommitsDialog } from './history/unreachable-commits-dialog'
 import { OpenPullRequestDialog } from './open-pull-request/open-pull-request-dialog'
 import { sendNonFatalException } from '../lib/helpers/non-fatal-exception'
@@ -278,6 +285,7 @@ export class App extends React.Component<IAppProps, IAppState> {
   private lastKeyPressed: string | null = null
 
   private updateIntervalHandle?: number
+  private unsubscribeRepositoryMetadata?: () => void
 
   private repositoryViewRef = React.createRef<RepositoryView>()
 
@@ -378,6 +386,7 @@ export class App extends React.Component<IAppProps, IAppState> {
 
   public componentWillUnmount() {
     window.clearInterval(this.updateIntervalHandle)
+    this.unsubscribeRepositoryMetadata?.()
 
     if (__DARWIN__) {
       window.removeEventListener('keydown', this.onMacOSWindowKeyDown)
@@ -568,6 +577,10 @@ export class App extends React.Component<IAppProps, IAppState> {
         return this.resizeActiveResizable('decrease-active-resizable-width')
       case 'toggle-changes-filter':
         return this.toggleChangesFilterVisibility()
+      case 'set-language-en':
+        return this.props.dispatcher.setLanguage('en')
+      case 'set-language-zh':
+        return this.props.dispatcher.setLanguage('zh')
       default:
         if (isTestMenuEvent(name)) {
           return showTestUI(
@@ -1062,6 +1075,10 @@ export class App extends React.Component<IAppProps, IAppState> {
   }
 
   public componentDidMount() {
+    this.unsubscribeRepositoryMetadata = subscribeRepositoryMetadata(() =>
+      this.forceUpdate()
+    )
+
     document.ondragover = e => {
       if (e.dataTransfer != null) {
         if (this.isShowingModal) {
@@ -2159,6 +2176,17 @@ export class App extends React.Component<IAppProps, IAppState> {
           <OversizedFiles
             key="oversized-files"
             oversizedFiles={popup.oversizedFiles}
+            onDismissed={onPopupDismissedFn}
+            dispatcher={this.props.dispatcher}
+            context={popup.context}
+            repository={popup.repository}
+          />
+        )
+      case PopupType.SensitiveFilesWarning:
+        return (
+          <SensitiveFilesWarning
+            key="sensitive-files-warning"
+            matches={popup.matches}
             onDismissed={onPopupDismissedFn}
             dispatcher={this.props.dispatcher}
             context={popup.context}
@@ -3355,6 +3383,7 @@ export class App extends React.Component<IAppProps, IAppState> {
       <div
         id="desktop-app-contents"
         className={this.getDesktopAppContentsClassNames()}
+        key={this.state.language}
       >
         {this.renderToolbar()}
         {this.renderBanner()}
@@ -3374,26 +3403,31 @@ export class App extends React.Component<IAppProps, IAppState> {
     const filterText = this.state.repositoryFilterText
     const repositories = this.state.repositories
     return (
-      <RepositoriesList
-        filterText={filterText}
-        onFilterTextChanged={this.onRepositoryFilterTextChanged}
-        selectedRepository={selectedRepository}
-        onSelectionChanged={this.onSelectionChanged}
-        repositories={repositories}
-        recentRepositories={this.state.recentRepositories}
-        localRepositoryStateLookup={this.state.localRepositoryStateLookup}
-        askForConfirmationOnRemoveRepository={
-          this.state.askForConfirmationOnRepositoryRemoval
-        }
-        onRemoveRepository={this.removeRepository}
-        onViewOnGitHub={this.viewOnGitHub}
-        onOpenInShell={this.openInShell}
-        onShowRepository={this.showRepository}
-        onOpenInExternalEditor={this.openInExternalEditor}
-        externalEditorLabel={this.externalEditorLabel}
-        shellLabel={useCustomShell ? undefined : selectedShell}
-        dispatcher={this.props.dispatcher}
-      />
+      <div className="repository-foldout-content">
+        {selectedRepository instanceof Repository && (
+          <ProjectCard repository={selectedRepository} />
+        )}
+        <RepositoriesList
+          filterText={filterText}
+          onFilterTextChanged={this.onRepositoryFilterTextChanged}
+          selectedRepository={selectedRepository}
+          onSelectionChanged={this.onSelectionChanged}
+          repositories={repositories}
+          recentRepositories={this.state.recentRepositories}
+          localRepositoryStateLookup={this.state.localRepositoryStateLookup}
+          askForConfirmationOnRemoveRepository={
+            this.state.askForConfirmationOnRepositoryRemoval
+          }
+          onRemoveRepository={this.removeRepository}
+          onViewOnGitHub={this.viewOnGitHub}
+          onOpenInShell={this.openInShell}
+          onShowRepository={this.showRepository}
+          onOpenInExternalEditor={this.openInExternalEditor}
+          externalEditorLabel={this.externalEditorLabel}
+          shellLabel={useCustomShell ? undefined : selectedShell}
+          dispatcher={this.props.dispatcher}
+        />
+      </div>
     )
   }
 
@@ -3501,13 +3535,21 @@ export class App extends React.Component<IAppProps, IAppState> {
     if (repository) {
       const alias = repository instanceof Repository ? repository.alias : null
       icon = iconForRepository(repository)
+
+      if (repository instanceof Repository) {
+        const { symbol } = getRepositoryMetadata(repository.id)
+        if (symbol !== null) {
+          icon = getProjectSymbol(symbol)
+        }
+      }
+
       title = alias ?? repository.name
     } else if (this.state.repositories.length > 0) {
       icon = octicons.repo
-      title = __DARWIN__ ? 'Select a Repository' : 'Select a repository'
+      title = t('toolbar.selectRepository')
     } else {
       icon = octicons.repo
-      title = __DARWIN__ ? 'No Repositories' : 'No repositories'
+      title = t('toolbar.noRepositories')
     }
 
     const isOpen =
@@ -3538,7 +3580,7 @@ export class App extends React.Component<IAppProps, IAppState> {
       <ToolbarDropdown
         icon={icon}
         title={title}
-        description={__DARWIN__ ? 'Current Repository' : 'Current repository'}
+        description={t('toolbar.currentRepository')}
         tooltip={tooltip}
         foldoutStyle={foldoutStyle}
         onContextMenu={this.onRepositoryToolbarButtonContextMenu}

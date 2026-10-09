@@ -28,6 +28,7 @@ import { BypassReasonType } from '../ui/secret-scanning/bypass-push-protection-d
 import { TerminalOutput, TerminalOutputListener } from '../lib/git'
 import type { IBYOKModel, IBYOKProvider } from '../lib/copilot/byok'
 import { WorktreeEntry } from './worktree'
+import { ISensitiveFileMatch } from '../lib/sensitive-files'
 
 export enum PopupType {
   RenameBranch = 'RenameBranch',
@@ -61,6 +62,7 @@ export enum PopupType {
   ReleaseNotes = 'ReleaseNotes',
   DeletePullRequest = 'DeletePullRequest',
   OversizedFiles = 'OversizedFiles',
+  SensitiveFilesWarning = 'SensitiveFilesWarning',
   CommitConflictsWarning = 'CommitConflictsWarning',
   PushNeedsPull = 'PushNeedsPull',
   ConfirmForcePush = 'ConfirmForcePush',
@@ -257,6 +259,15 @@ export type PopupDetail =
       oversizedFiles: ReadonlyArray<string>
       context: ICommitContext
       repository: Repository
+    }
+  | {
+      type: PopupType.SensitiveFilesWarning
+      /** files in the pending commit which matched the default rules */
+      matches: ReadonlyArray<ISensitiveFileMatch>
+      /** repository user is committing in */
+      repository: Repository
+      /** information for completing the commit */
+      context: ICommitContext
     }
   | {
       type: PopupType.CommitConflictsWarning

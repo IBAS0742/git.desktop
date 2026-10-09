@@ -33,6 +33,10 @@ import { IAheadBehind } from '../../models/branch'
 import { Emoji } from '../../lib/emoji'
 import { FilterChangesList } from './filter-changes-list'
 import { HookProgress } from '../../lib/git'
+import {
+  findSensitiveFiles,
+  isSensitiveScanOptedOut,
+} from '../../lib/sensitive-files'
 
 /**
  * The timeout for the animation of the enter/leave animation for Undo.
@@ -208,6 +212,27 @@ export class ChangesSidebar extends React.Component<IChangesSidebarProps, {}> {
       this.props.dispatcher.showPopup({
         type: PopupType.CommitConflictsWarning,
         files: conflictedFilesSelected,
+        repository: this.props.repository,
+        context,
+      })
+      return false
+    }
+
+    // Scan the contents of the pending commit against the default list of
+    // sensitive file types and folders and ask the user to review any matches
+    // before the commit is created (unless they opted out for this project).
+    const filesToCommit = workingDirectory.files.filter(
+      f => f.selection.getSelectionType() !== DiffSelectionType.None
+    )
+    const sensitiveMatches = findSensitiveFiles(filesToCommit.map(f => f.path))
+
+    if (
+      sensitiveMatches.length > 0 &&
+      !isSensitiveScanOptedOut(this.props.repository.id)
+    ) {
+      this.props.dispatcher.showPopup({
+        type: PopupType.SensitiveFilesWarning,
+        matches: sensitiveMatches,
         repository: this.props.repository,
         context,
       })

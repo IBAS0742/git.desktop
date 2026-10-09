@@ -29,6 +29,7 @@ export function createState<K extends keyof IChangesState>(
       isModifiedFile: false,
       isDeletedFile: false,
       isExcludedFromCommit: false,
+      showIgnoredFiles: false,
     },
   }
 

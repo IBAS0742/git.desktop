@@ -27,6 +27,7 @@ interface IChangesListFilterOptionsProps {
   readonly onFilterDeletedFiles: () => void
   readonly onFilterModifiedFiles: () => void
   readonly onFilterNewFiles: () => void
+  readonly onFilterShowIgnoredFiles: () => void
   readonly onClearAllFilters: () => void
 }
 
@@ -118,6 +119,11 @@ export class ChangesListFilterOptions extends React.Component<
 
   private onFilterNewFiles = () => {
     this.props.onFilterNewFiles()
+    this.closeFilterOptions()
+  }
+
+  private onFilterShowIgnoredFiles = () => {
+    this.props.onFilterShowIgnoredFiles()
     this.closeFilterOptions()
   }
 
@@ -213,6 +219,15 @@ export class ChangesListFilterOptions extends React.Component<
             }
             onChange={this.onFilterDeletedFiles}
             label={`Deleted files (${deletedFilesCount})`}
+          />
+          <Checkbox
+            value={
+              this.props.fileListFilter.showIgnoredFiles
+                ? CheckboxValue.On
+                : CheckboxValue.Off
+            }
+            onChange={this.onFilterShowIgnoredFiles}
+            label={`Show ignored files (${this.props.workingDirectory.ignoredFiles.length})`}
           />
         </div>
         {filtersActive && (

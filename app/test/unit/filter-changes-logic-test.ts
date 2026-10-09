@@ -51,18 +51,27 @@ function createTestItem(
   }
 }
 
+// Helper to build a filter state with sensible defaults
+function createFilterState(
+  overrides: Partial<IFileListFilterState> = {}
+): IFileListFilterState {
+  return {
+    filterText: '',
+    isIncludedInCommit: false,
+    isExcludedFromCommit: false,
+    isNewFile: false,
+    isModifiedFile: false,
+    isDeletedFile: false,
+    showIgnoredFiles: false,
+    ...overrides,
+  }
+}
+
 describe('filter-changes-logic', () => {
   describe('applyFilterOptions', () => {
     describe('when no filters are active', () => {
       it('should show all files', () => {
-        const filters: IFileListFilterState = {
-          filterText: '',
-          isIncludedInCommit: false,
-          isExcludedFromCommit: false,
-          isNewFile: false,
-          isModifiedFile: false,
-          isDeletedFile: false,
-        }
+        const filters = createFilterState()
 
         const newFile = createTestItem(
           'new.txt',
@@ -88,14 +97,10 @@ describe('filter-changes-logic', () => {
 
     describe('when using AND logic', () => {
       it('should show files matching ALL active filters', () => {
-        const filters: IFileListFilterState = {
-          filterText: '',
+        const filters = createFilterState({
           isIncludedInCommit: true,
-          isExcludedFromCommit: false,
           isNewFile: true,
-          isModifiedFile: false,
-          isDeletedFile: false,
-        }
+        })
 
         // Staged new file - matches both filters
         const stagedNewFile = createTestItem(
@@ -122,14 +127,10 @@ describe('filter-changes-logic', () => {
       })
 
       it('should handle conflicting filters correctly', () => {
-        const filters: IFileListFilterState = {
-          filterText: '',
+        const filters = createFilterState({
           isIncludedInCommit: true,
           isExcludedFromCommit: true, // Both can't be true at same time
-          isNewFile: false,
-          isModifiedFile: false,
-          isDeletedFile: false,
-        }
+        })
 
         const stagedFile = createTestItem(
           'staged.txt',
@@ -148,14 +149,7 @@ describe('filter-changes-logic', () => {
       })
 
       it('should treat untracked files as new files', () => {
-        const filters: IFileListFilterState = {
-          filterText: '',
-          isIncludedInCommit: false,
-          isExcludedFromCommit: false,
-          isNewFile: true,
-          isModifiedFile: false,
-          isDeletedFile: false,
-        }
+        const filters = createFilterState({ isNewFile: true })
 
         const untrackedFile = {
           id: 'untracked.txt',
@@ -171,14 +165,7 @@ describe('filter-changes-logic', () => {
       })
 
       it('should match excluded files when excluded filter is active', () => {
-        const filters: IFileListFilterState = {
-          filterText: '',
-          isIncludedInCommit: false,
-          isExcludedFromCommit: true,
-          isNewFile: false,
-          isModifiedFile: false,
-          isDeletedFile: false,
-        }
+        const filters = createFilterState({ isExcludedFromCommit: true })
 
         const excludedFile = createTestItem(
           'excluded.txt',
@@ -199,14 +186,7 @@ describe('filter-changes-logic', () => {
 
   describe('isCommittingFileHiddenByFilter', () => {
     it('should return false when no filters are active', () => {
-      const filters: IFileListFilterState = {
-        filterText: '',
-        isIncludedInCommit: false,
-        isExcludedFromCommit: false,
-        isNewFile: false,
-        isModifiedFile: false,
-        isDeletedFile: false,
-      }
+      const filters = createFilterState()
 
       const fileIds = ['file1', 'file2']
       const filteredItems = new Map([
@@ -221,14 +201,7 @@ describe('filter-changes-logic', () => {
     })
 
     it('should return true when committing files not in filtered list', () => {
-      const filters: IFileListFilterState = {
-        filterText: '',
-        isIncludedInCommit: true,
-        isExcludedFromCommit: false,
-        isNewFile: false,
-        isModifiedFile: false,
-        isDeletedFile: false,
-      }
+      const filters = createFilterState({ isIncludedInCommit: true })
 
       const fileIds = ['file1', 'file2', 'file3']
       const filteredItems = new Map([
@@ -243,14 +216,10 @@ describe('filter-changes-logic', () => {
     })
 
     it('should return false when all files remain visible after filtering', () => {
-      const filters: IFileListFilterState = {
+      const filters = createFilterState({
         filterText: 'src',
-        isIncludedInCommit: false,
-        isExcludedFromCommit: false,
-        isNewFile: false,
         isModifiedFile: true,
-        isDeletedFile: false,
-      }
+      })
 
       const fileIds = ['file1', 'file2']
       const filteredItems = new Map([
@@ -267,41 +236,23 @@ describe('filter-changes-logic', () => {
 
   describe('getNoResultsMessage', () => {
     it('should return undefined when no filters active', () => {
-      const filters: IFileListFilterState = {
-        filterText: '',
-        isIncludedInCommit: false,
-        isExcludedFromCommit: false,
-        isNewFile: false,
-        isModifiedFile: false,
-        isDeletedFile: false,
-      }
+      const filters = createFilterState()
 
       assert.equal(getNoResultsMessage(filters), undefined)
     })
 
     it('should return message with text filter', () => {
-      const filters: IFileListFilterState = {
-        filterText: 'test',
-        isIncludedInCommit: false,
-        isExcludedFromCommit: false,
-        isNewFile: false,
-        isModifiedFile: false,
-        isDeletedFile: false,
-      }
+      const filters = createFilterState({ filterText: 'test' })
 
       const message = getNoResultsMessage(filters)
       assert(message?.includes('"test"'))
     })
 
     it('should return message with multiple filters', () => {
-      const filters: IFileListFilterState = {
-        filterText: '',
+      const filters = createFilterState({
         isIncludedInCommit: true,
-        isExcludedFromCommit: false,
         isNewFile: true,
-        isModifiedFile: false,
-        isDeletedFile: false,
-      }
+      })
 
       const message = getNoResultsMessage(filters)
       assert(message?.includes('Included in commit'))
@@ -309,14 +260,12 @@ describe('filter-changes-logic', () => {
     })
 
     it('should format three or more filters with commas and and', () => {
-      const filters: IFileListFilterState = {
+      const filters = createFilterState({
         filterText: 'src',
         isIncludedInCommit: true,
-        isExcludedFromCommit: false,
-        isNewFile: false,
         isModifiedFile: true,
         isDeletedFile: true,
-      }
+      })
 
       assert.equal(
         getNoResultsMessage(filters),
@@ -327,40 +276,19 @@ describe('filter-changes-logic', () => {
 
   describe('hasActiveFilters', () => {
     it('should return false when no text or filter options are active', () => {
-      const filters: IFileListFilterState = {
-        filterText: '',
-        isIncludedInCommit: false,
-        isExcludedFromCommit: false,
-        isNewFile: false,
-        isModifiedFile: false,
-        isDeletedFile: false,
-      }
+      const filters = createFilterState()
 
       assert.equal(hasActiveFilters(filters), false)
     })
 
     it('should return true when either text or filter options are active', () => {
       assert.equal(
-        hasActiveFilters({
-          filterText: 'src',
-          isIncludedInCommit: false,
-          isExcludedFromCommit: false,
-          isNewFile: false,
-          isModifiedFile: false,
-          isDeletedFile: false,
-        }),
+        hasActiveFilters(createFilterState({ filterText: 'src' })),
         true
       )
 
       assert.equal(
-        hasActiveFilters({
-          filterText: '',
-          isIncludedInCommit: false,
-          isExcludedFromCommit: false,
-          isNewFile: false,
-          isModifiedFile: true,
-          isDeletedFile: false,
-        }),
+        hasActiveFilters(createFilterState({ isModifiedFile: true })),
         true
       )
     })
@@ -374,14 +302,7 @@ describe('filter-changes-logic', () => {
         DiffSelectionType.All
       )
 
-      const filters: IFileListFilterState = {
-        filterText: '',
-        isIncludedInCommit: false,
-        isExcludedFromCommit: false,
-        isNewFile: true,
-        isModifiedFile: false,
-        isDeletedFile: false,
-      }
+      const filters = createFilterState({ isNewFile: true })
 
       assert.equal(applyFilters(item, false, filters), true)
       assert.equal(applyFilters(item, true, filters), false)

@@ -25,6 +25,7 @@ import {
   CommitOptions,
 } from '../../lib/app-state'
 import { assertNever, fatalError } from '../../lib/fatal-error'
+import { SupportedLanguage } from '../../lib/i18n'
 import {
   setGenericPassword,
   setGenericUsername,
@@ -4220,6 +4221,11 @@ export class Dispatcher {
     return this.appStore._setPreferAbsoluteDates(value)
   }
 
+  /** Change the language used to render the user interface */
+  public setLanguage(value: SupportedLanguage) {
+    return this.appStore._setLanguage(value)
+  }
+
   public testPruneBranches() {
     return this.appStore._testPruneBranches()
   }
@@ -4264,6 +4270,10 @@ export class Dispatcher {
       repository,
       isExcludedFromCommit
     )
+  }
+
+  public setShowIgnoredFiles(repository: Repository, showIgnoredFiles: boolean) {
+    return this.appStore._setShowIgnoredFiles(repository, showIgnoredFiles)
   }
 
   public async createPushProtectionBypass(
