@@ -1,0 +1,180 @@
+@import '../mixins';
+
+/**
+ * The ignore button and the diff/split/edit view switch in the diff header.
+ */
+.diff-container {
+  .header {
+    .header-actions {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+      gap: var(--spacing-half);
+      margin-left: auto;
+    }
+
+    .diff-ignore-button {
+      height: 22px;
+      padding: 0 var(--spacing-half);
+      font-size: var(--font-size-sm);
+    }
+
+    .diff-view-switch {
+      display: inline-flex;
+      align-items: center;
+      flex-shrink: 0;
+      border: var(--base-border);
+      border-radius: var(--border-radius);
+      overflow: hidden;
+
+      .diff-view-switch-button {
+        appearance: none;
+        border: none;
+        border-left: 1px solid var(--box-border-color);
+        background: transparent;
+        color: var(--text-color);
+        height: 22px;
+        padding: 0 var(--spacing-half);
+        margin: 0;
+        font-size: var(--font-size-sm);
+        cursor: pointer;
+
+        &:first-child {
+          border-left: none;
+        }
+
+        &:hover:not(.active) {
+          background: var(--list-item-hover-background-color);
+        }
+
+        &.active {
+          background: var(--box-selected-active-background-color);
+          color: var(--box-selected-active-text-color);
+        }
+      }
+    }
+  }
+
+  /**
+   * The area below the diff header which holds the editor and/or the diff.
+   * In split mode both are rendered side by side, otherwise a single child
+   * fills the available space.
+   */
+  .diff-body {
+    display: flex;
+    flex-direction: row;
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+
+    > * {
+      flex: 1 1 0;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    &.diff-split > * + * {
+      border-left: 1px solid var(--diff-border-color);
+    }
+  }
+}
+
+/**
+ * A minimal in-app editor shown in place of the diff for a changed file.
+ * The highlighted `<pre>` sits behind a transparent `<textarea>` so both the
+ * highlight and the caret line up as long as they share the same metrics.
+ */
+.file-editor {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+
+  .file-editor-toolbar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    gap: var(--spacing-half);
+    padding: var(--spacing-half) var(--spacing);
+    background: var(--box-alt-background-color);
+    border-bottom: 1px solid var(--diff-border-color);
+  }
+
+  .file-editor-hint {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: var(--font-size-sm);
+    color: var(--text-color);
+    opacity: 0.75;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .file-editor-error {
+    padding: var(--spacing);
+    color: var(--error-color);
+  }
+
+  .file-editor-body {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .file-editor-highlight,
+  .file-editor-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0;
+    padding: var(--spacing-half) var(--spacing);
+    border: 0;
+    box-sizing: border-box;
+    font-family: var(--font-family-monospace);
+    font-size: var(--font-size-sm);
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    // Use a whole-pixel line height so the <pre> backdrop and the <textarea>
+    // lay every line out on the exact same pixel grid. A fractional line
+    // height (e.g. 1.45 at 11px) drifts apart vertically after a few lines.
+    line-height: 16px;
+    letter-spacing: normal;
+    word-spacing: normal;
+    white-space: pre;
+    tab-size: 4;
+    text-transform: none;
+    overflow-wrap: normal;
+    word-break: normal;
+    overflow: auto;
+  }
+
+  .file-editor-highlight {
+    pointer-events: none;
+    color: var(--text-color);
+    background: var(--background-color);
+    z-index: 1;
+  }
+
+  .file-editor-input {
+    z-index: 2;
+    background: transparent;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    caret-color: var(--text-color);
+    resize: none;
+    outline: none;
+
+    &::selection {
+      background: rgba(128, 128, 128, 0.35);
+      color: transparent;
+    }
+  }
+}

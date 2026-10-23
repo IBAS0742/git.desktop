@@ -70,7 +70,10 @@ export function updateChangedFiles(
   // a diff when a single file is selected. If the previous selection was
   // a single file with the same id as the current selection we can keep the
   // diff we had, if not we'll clear it.
-  const workingDirectory = WorkingDirectoryStatus.fromFiles(mergedFiles)
+  const workingDirectory = WorkingDirectoryStatus.fromFiles(
+    mergedFiles,
+    status.workingDirectory.ignoredFiles
+  )
 
   const selectionKind = state.selection.kind
   if (state.selection.kind === ChangesSelectionKind.WorkingDirectory) {

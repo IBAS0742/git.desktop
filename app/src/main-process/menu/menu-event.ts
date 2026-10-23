@@ -49,6 +49,8 @@ export type MenuEvent =
   | 'decrease-active-resizable-width'
   | 'increase-active-resizable-width'
   | 'toggle-changes-filter'
+  | 'set-language-en'
+  | 'set-language-zh'
   | TestMenuEvent
 
 /**

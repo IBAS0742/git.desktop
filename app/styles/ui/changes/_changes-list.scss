@@ -150,6 +150,37 @@
         .spacer {
           flex-grow: 1;
         }
+
+        // Manual status reload, e.g. after editing .gitignore elsewhere.
+        // Only runs when clicked so the list never jumps on its own.
+        .changes-list-refresh-button {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          width: 22px;
+          height: 22px;
+          margin-left: auto;
+          padding: 0;
+          border: none;
+          border-radius: var(--border-radius);
+          background: transparent;
+          color: var(--text-color);
+          cursor: pointer;
+
+          svg {
+            fill: currentColor;
+          }
+
+          &:hover:not(:disabled) {
+            background-color: var(--list-item-hover-background-color);
+          }
+
+          &:disabled {
+            opacity: 0.5;
+            cursor: default;
+          }
+        }
       }
 
       .changes-list-check-all {

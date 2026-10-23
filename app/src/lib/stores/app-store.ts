@@ -55,6 +55,7 @@ import {
   getPreferAbsoluteDates,
   setPreferAbsoluteDates,
 } from '../../models/formatting-preferences'
+import { getLanguage, setLanguage, SupportedLanguage } from '../i18n'
 import {
   Commit,
   ICommitContext,
@@ -744,6 +745,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
   private preferAbsoluteDates: boolean = false
 
+  private language: SupportedLanguage = getLanguage()
+
   private cachedRepoRulesets = new Map<number, IAPIRepoRuleset>()
 
   private underlineLinks: boolean = underlineLinksDefault
@@ -1339,6 +1342,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       showDiffCheckMarks: this.showDiffCheckMarks,
       alwaysShowWorktreeList: this.alwaysShowWorktreeList,
       preferAbsoluteDates: this.preferAbsoluteDates,
+      language: this.language,
       updateState: updateStore.state,
       commitMessageGenerationDisclaimerLastSeen:
         this.commitMessageGenerationDisclaimerLastSeen,
@@ -2881,6 +2885,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       selectedExternalEditor: useCustomEditor ? null : selectedExternalEditor,
       askForConfirmationOnRepositoryRemoval,
       askForConfirmationOnForcePush,
+      language: this.language,
     }
 
     if (state === null) {
@@ -3493,7 +3498,10 @@ export class AppStore extends TypedBaseStore<IAppState> {
     const updatedFiles = changesState.workingDirectory.files.map(f =>
       f.id === selectedFile.id ? selectedFile : f
     )
-    const workingDirectory = WorkingDirectoryStatus.fromFiles(updatedFiles)
+    const workingDirectory = WorkingDirectoryStatus.fromFiles(
+      updatedFiles,
+      changesState.workingDirectory.ignoredFiles
+    )
 
     const selection: ChangesWorkingDirectorySelection = {
       ...changesState.selection,
@@ -3868,7 +3876,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
       const workingDirectory = WorkingDirectoryStatus.fromFiles(
         state.workingDirectory.files.map(f =>
           modifiedIds.has(f.id) ? f.withIncludeAll(include) : f
-        )
+        ),
+        state.workingDirectory.ignoredFiles
       )
 
       return { workingDirectory }
@@ -3902,7 +3911,10 @@ export class AppStore extends TypedBaseStore<IAppState> {
         f.id === file.id ? f.withSelection(selection) : f
       )
 
-      const workingDirectory = WorkingDirectoryStatus.fromFiles(newFiles)
+      const workingDirectory = WorkingDirectoryStatus.fromFiles(
+        newFiles,
+        state.workingDirectory.ignoredFiles
+      )
 
       return { workingDirectory }
     })
@@ -10717,6 +10729,17 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
   }
 
+  public _setLanguage(value: SupportedLanguage) {
+    if (value !== this.language) {
+      this.language = value
+      setLanguage(value)
+      // Rebuild the application menu so the Language menu can reflect the
+      // newly selected language with a checkmark.
+      this.updateMenuLabelsForSelectedRepository()
+      this.emitUpdate()
+    }
+  }
+
   public _updateFileListFilter(
     repository: Repository,
     filterUpdate: Partial<IFileListFilterState>
@@ -10764,6 +10787,10 @@ export class AppStore extends TypedBaseStore<IAppState> {
     isExcludedFromCommit: boolean
   ) {
     this._updateFileListFilter(repository, { isExcludedFromCommit })
+  }
+
+  public _setShowIgnoredFiles(repository: Repository, showIgnoredFiles: boolean) {
+    this._updateFileListFilter(repository, { showIgnoredFiles })
   }
 
   public async _createPushProtectionBypass(

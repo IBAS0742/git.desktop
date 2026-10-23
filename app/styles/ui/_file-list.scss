@@ -50,4 +50,66 @@
       color: var(--text-color);
     }
   }
+
+  // Rows representing a directory in the tree-structured file lists
+  .tree-directory {
+    cursor: pointer;
+    user-select: none;
+    width: 100%;
+    background: none;
+    border: 0;
+    border-radius: 0;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    appearance: none;
+
+    &:hover {
+      background: var(--list-item-hover-background-color);
+    }
+
+    .tree-toggle {
+      flex-shrink: 0;
+      width: 14px;
+      height: 16px;
+      color: var(--text-color);
+      opacity: 0.7;
+    }
+
+    .tree-directory-icon {
+      flex-shrink: 0;
+      margin-right: 5px;
+      color: var(--text-color);
+      opacity: 0.85;
+    }
+
+    .tree-directory-name {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-weight: 600;
+      min-width: 0;
+    }
+  }
+
+  .tree-indent {
+    flex-shrink: 0;
+  }
+
+  // A muted pill shown next to files or directories which are ignored by Git
+  .ignored-badge {
+    flex-shrink: 0;
+    margin-left: 8px;
+    padding: 1px 7px;
+    border: 1px solid var(--base-border);
+    border-radius: 10px;
+    font-size: var(--font-size-xs);
+    line-height: 1.35;
+    color: var(--text-secondary-color);
+  }
+
+  // Ignored directories are rows, not buttons, so they should not look clickable
+  .tree-directory.tree-directory-ignored {
+    cursor: default;
+  }
 }

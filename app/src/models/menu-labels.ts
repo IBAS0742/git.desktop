@@ -2,6 +2,12 @@ import { Shell } from '../lib/shells'
 
 export type MenuLabelsEvent = {
   /**
+   * The currently selected interface language, used to check the active
+   * language item in the Language menu. Defaults to 'en' when omitted.
+   */
+  readonly language?: string
+
+  /**
    * Specify the user's selected shell to display in the menu.
    *
    * Specify `null` to indicate that it is not known currently, which will

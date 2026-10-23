@@ -1,0 +1,149 @@
+==============================================
+ GitHub Desktop rebuild
+==============================================
+ Target : build:dev
+ Install: 0 (1=install, 0=skip cached)
+
+[0/4] Checking prerequisites...
+Node:
+v24.19.0
+Yarn:
+1.21.1
+
+[1/4] Skipping dependency install - node_modules and Electron are already cached.
+       Force a fresh install with: rebuild.bat install
+
+[3/4] Building (build:dev)...
+yarn run v1.21.1
+$ yarn compile:dev && cross-env NODE_ENV=development ts-node -P script/tsconfig.json script/build.ts
+$ cross-env NODE_ENV=development TS_NODE_PROJECT=script/tsconfig.json webpack --config app/webpack.development.ts
+asset [1m[32mmain.js[39m[22m 1.55 MiB [1m[33m[compared for emit][39m[22m (name: main) 1 related asset
+asset [1m[32mregistry.node[39m[22m 681 KiB [1m[33m[compared for emit][39m[22m (auxiliary name: main)
+asset [1m[32mdesktop-notifications.node[39m[22m 336 KiB [1m[33m[compared for emit][39m[22m (auxiliary name: main)
+runtime modules 1.04 KiB 5 modules
+modules by path [1m./app/node_modules/[39m[22m 1.07 MiB 248 modules
+modules by path [1m./app/src/[39m[22m 284 KiB
+  modules by path [1m./app/src/lib/[39m[22m 119 KiB 34 modules
+  modules by path [1m./app/src/main-process/[39m[22m 128 KiB
+    modules by path [1m./app/src/main-process/*.ts[39m[22m 85.8 KiB 20 modules
+    modules by path [1m./app/src/main-process/menu/*.ts[39m[22m 41.7 KiB 9 modules
+  modules by path [1m./app/src/models/*.ts[39m[22m 21.2 KiB
+    [1m./app/src/models/app-menu.ts[39m[22m 17.2 KiB [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+    [1m./app/src/models/account.ts[39m[22m 3.98 KiB [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  modules by path [1m./app/src/ui/[39m[22m 15.8 KiB
+    [1m./app/src/ui/main-process-proxy.ts[39m[22m 14.6 KiB [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+    [1m./app/src/ui/lib/app-proxy.ts[39m[22m 1.12 KiB [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
++ 20 modules
+webpack 5.104.1 compiled [1m[32msuccessfully[39m[22m in 52773 ms
+
+assets by status 38.4 KiB [1m[32m[cached][39m[22m 3 assets
+assets by status 13.7 MiB [1m[33m[compared for emit][39m[22m
+  assets by path [1m[32m*.node[39m[22m 2.41 MiB
+    asset [1m[32mkeytar.node[39m[22m 691 KiB [1m[33m[compared for emit][39m[22m (auxiliary name: renderer)
+    asset [1m[32mregistry.node[39m[22m 681 KiB [1m[33m[compared for emit][39m[22m (auxiliary name: renderer)
+    asset [1m[32mfs_admin.node[39m[22m 604 KiB [1m[33m[compared for emit][39m[22m (auxiliary name: renderer)
+    asset [1m[32mdesktop-notifications.node[39m[22m 336 KiB [1m[33m[compared for emit][39m[22m (auxiliary name: renderer)
+    asset [1m[32mwindows-argv-parser.node[39m[22m 161 KiB [1m[33m[compared for emit][39m[22m (auxiliary name: renderer)
+  assets by path [1m[32m*.js[39m[22m 11.3 MiB
+    asset [1m[32mrenderer.js[39m[22m 11.3 MiB [1m[33m[compared for emit][39m[22m (name: renderer) 1 related asset
+    asset [1m[32mvendors-app_node_modules_github_copilot-sdk_dist_ffiRuntimeHost_js.js[39m[22m 30.5 KiB [1m[33m[compared for emit][39m[22m (id hint: vendors) 1 related asset
+  asset [1m[32mindex.html[39m[22m 254 bytes [1m[33m[compared for emit][39m[22m
+orphan modules 445 KiB [1m[33m[orphan][39m[22m 272 modules
+runtime modules 30 KiB 15 modules
+modules by path [1m./app/[39m[22m 9.21 MiB (javascript) 38.4 KiB (asset)
+  modules by path [1m./app/src/[39m[22m 4.42 MiB 812 modules
+  modules by path [1m./app/node_modules/[39m[22m 3.41 MiB (javascript) 79 bytes (asset) 492 modules
+  modules by path [1m./app/styles/*.scss[39m[22m 1.38 MiB 2 modules
+  modules by path [1m./app/static/common/*.svg[39m[22m 38.3 KiB (asset) 84 bytes (javascript) 2 modules
+modules by path [1m./node_modules/[39m[22m 125 KiB 26 modules
+modules by mime type [1mimage/svg+xml[39m[22m 2.49 KiB
+  [1mdata:image/svg+xml;utf8,<svg xmlns="http..[39m[22m 441 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  [1mdata:image/svg+xml;utf8,<svg xmlns="http..[39m[22m 664 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  [1mdata:image/svg+xml;utf8,<svg xmlns="http..[39m[22m 788 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  [1mdata:image/svg+xml,%3Csvg width=%27..[39m[22m 333 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  [1mdata:image/svg+xml,%3Csvg width=%27..[39m[22m 327 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
++ 29 modules
+webpack 5.104.1 compiled [1m[32msuccessfully[39m[22m in 59269 ms
+
+asset [1m[32mcrash.js[39m[22m 1.59 MiB [1m[33m[compared for emit][39m[22m (name: crash) 1 related asset
+asset [1m[32mcrash.html[39m[22m 235 bytes [1m[33m[compared for emit][39m[22m
+runtime modules 972 bytes 5 modules
+modules by path [1m./app/[39m[22m 1.45 MiB
+  modules by path [1m./app/src/[39m[22m 614 KiB 37 modules
+  modules by path [1m./app/node_modules/[39m[22m 875 KiB 16 modules
+modules by path [1m./node_modules/[39m[22m 8.49 KiB
+  modules by path [1m./node_modules/style-loader/dist/runtime/*.js[39m[22m 5.75 KiB 6 modules
+  modules by path [1m./node_modules/css-loader/dist/runtime/*.js[39m[22m 2.74 KiB
+    [1m./node_modules/css-loader/dist/runtime/sourceMaps.js[39m[22m 505 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+    [1m./node_modules/css-loader/dist/runtime/api.js[39m[22m 2.25 KiB [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
++ 7 modules
+webpack 5.104.1 compiled [1m[32msuccessfully[39m[22m in 39353 ms
+
+asset [1m[32mcli.js[39m[22m 13.1 KiB [1m[33m[compared for emit][39m[22m (name: cli) 1 related asset
+runtime modules 937 bytes 4 modules
+built modules 8.48 KiB [1m[33m[built][39m[22m
+  cacheable modules 8.4 KiB
+    [1m./app/src/cli/main.ts[39m[22m 2.35 KiB [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+    [1m./app/node_modules/minimist/index.js[39m[22m 6.05 KiB [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  [1mexternal "path"[39m[22m 42 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  [1mexternal "child_process"[39m[22m 42 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+webpack 5.104.1 compiled [1m[32msuccessfully[39m[22m in 26773 ms
+
+assets by path [1m[32mhighlighter/mode/*.js[39m[22m 722 KiB
+  asset [1m[32mhighlighter/mode/sql.js[39m[22m 58.2 KiB [1m[33m[compared for emit][39m[22m (name: mode/sql) (id hint: modes) 1 related asset
+  asset [1m[32mhighlighter/mode/perl.js[39m[22m 55.1 KiB [1m[33m[compared for emit][39m[22m (name: mode/perl) (id hint: modes) 1 related asset
+  asset [1m[32mhighlighter/mode/stylus.js[39m[22m 41.6 KiB [1m[33m[compared for emit][39m[22m (name: mode/stylus) (id hint: modes) 1 related asset
+  asset [1m[32mhighlighter/mode/css.js[39m[22m 39.9 KiB [1m[33m[compared for emit][39m[22m (name: mode/css) (id hint: modes) 1 related asset
+  asset [1m[32mhighlighter/mode/javascript.js[39m[22m 38.4 KiB [1m[33m[compared for emit][39m[22m (name: mode/javascript) (id hint: modes) 1 related asset
+  asset [1m[32mhighlighter/mode/clike.js[39m[22m 36.8 KiB [1m[33m[compared for emit][39m[22m (name: mode/clike) (id hint: modes) 1 related asset
+  asset [1m[32mhighlighter/mode/markdown.js[39m[22m 31.1 KiB [1m[33m[compared for emit][39m[22m (name: mode/markdown) (id hint: modes) 1 related asset
+  + 50 assets
+assets by path [1m[32mhighlighter/ext/*.js[39m[22m 14.1 KiB
+  asset [1m[32mhighlighter/ext/elixir.js[39m[22m 5.55 KiB [1m[33m[compared for emit][39m[22m (name: ext/elixir) (id hint: modes) 1 related asset
+  asset [1m[32mhighlighter/ext/luau.js[39m[22m 5.27 KiB [1m[33m[compared for emit][39m[22m (name: ext/luau) (id hint: modes) 1 related asset
+  asset [1m[32mhighlighter/ext/zig.js[39m[22m 3.25 KiB [1m[33m[compared for emit][39m[22m (name: ext/zig) (id hint: modes) 1 related asset
+asset [1m[32mhighlighter.js[39m[22m 50.3 KiB [1m[33m[compared for emit][39m[22m (name: highlighter) 1 related asset
+asset [1m[32mhighlighter/common.js[39m[22m 32.8 KiB [1m[33m[compared for emit][39m[22m (name: common) (id hint: modes) 1 related asset
+runtime modules 4.77 KiB 10 modules
+modules by path [1m./app/node_modules/codemirror/mode/[39m[22m 716 KiB
+  [1m./app/node_modules/codemirror/mode/javascript/javascript.js[39m[22m 38 KiB [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  [1m./app/node_modules/codemirror/mode/coffeescript/coffeescript.js[39m[22m 9.8 KiB [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  [1m./app/node_modules/codemirror/mode/jsx/jsx.js[39m[22m 5.17 KiB [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  + 55 modules
+modules by path [1m./app/node_modules/codemirror/addon/[39m[22m 27.4 KiB
+  [1m./app/node_modules/codemirror/addon/runmode/runmode.node.js[39m[22m 11.2 KiB [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  [1m./app/node_modules/codemirror/addon/mode/multiplex.js[39m[22m 5.07 KiB [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  [1m./app/node_modules/codemirror/addon/mode/overlay.js[39m[22m 3.17 KiB [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  [1m./app/node_modules/codemirror/addon/mode/simple.js[39m[22m 7.89 KiB [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+[1m./app/src/highlighter/index.ts[39m[22m 17.2 KiB [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+[1m./app/node_modules/codemirror-mode-elixir/dist/codemirror-mode-elixir.m.js[39m[22m 4.59 KiB [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+[1m./app/node_modules/codemirror-mode-luau/index.js[39m[22m 4.39 KiB [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+[1m./app/node_modules/codemirror-mode-zig/index.js[39m[22m 2.42 KiB [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+webpack 5.104.1 compiled [1m[32msuccessfully[39m[22m in 29365 ms
+Building for development…
+Removing old distribution…
+Copying dependencies…
+  Installing dependencies via yarn…
+  Copying desktop-askpass-trampoline…
+  Copying copilot…
+  Copying git environment…
+  Copying desktop credential helper…
+  Copying process-proxy binary
+  Copying printenvz binary
+Packaging emoji…
+Copying static resources…
+Parsing license metadata…
+Updating our licenses dump…
+(node:38148) [DEP0170] DeprecationWarning: The URL git+ssh://git@github.com:isaacs/cliui is invalid. Future versions of Node.js will throw an error.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Packaging…
+Packaging app for platform win32 x64 using electron v44.1.1
+Built to E:\projects\git.desktop\dist\GitHubDesktop-dev-win32-x64
+Done in 97.63s.
+
+==============================================
+ Done.
+   out\   = webpack bundle
+   dist\  = packaged app (run with: yarn start)
+==============================================
+Press any key to continue . . . 

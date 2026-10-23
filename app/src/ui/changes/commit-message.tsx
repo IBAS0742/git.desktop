@@ -41,6 +41,7 @@ import { setGlobalConfigValue } from '../../lib/git/config'
 import { Popup, PopupType } from '../../models/popup'
 import { RepositorySettingsTab } from '../repository-settings/repository-settings'
 import { IdealSummaryLength } from '../../lib/wrap-rich-text-commit-message'
+import { t } from '../../lib/i18n'
 import { isEmptyOrWhitespace } from '../../lib/is-empty-or-whitespace'
 import { TooltipDirection } from '../lib/tooltip'
 import { ToggledtippedContent } from '../lib/toggletipped-content'
@@ -1496,8 +1497,10 @@ export class CommitMessage extends React.Component<
   private getButtonVerb() {
     const { isCommitting, commitToAmend } = this.props
 
-    const amendVerb = isCommitting ? 'Amending' : 'Amend'
-    const commitVerb = isCommitting ? 'Committing' : 'Commit'
+    const amendVerb = isCommitting ? t('commit.amending') : t('commit.amend')
+    const commitVerb = isCommitting
+      ? t('commit.committing')
+      : t('commit.commit')
     const isAmending = commitToAmend !== null
 
     return isAmending ? amendVerb : commitVerb
@@ -1516,7 +1519,10 @@ export class CommitMessage extends React.Component<
      * as three separate strings "Verb" and "Count" and "to" and even tho
      * visually it was correctly adding spacings, for screen reader users it was
      * not and putting them all to together as one word. */
-    const action = `${verb} ${this.getFilesToBeCommittedButtonText()}to `
+    const action = t('commit.action', {
+      verb,
+      files: this.getFilesToBeCommittedButtonText(),
+    })
 
     return (
       <>
@@ -1536,9 +1542,12 @@ export class CommitMessage extends React.Component<
       return ''
     }
 
-    const pluralizedFile = filesToBeCommittedCount > 1 ? 'files' : 'file'
+    const fileCountLabel =
+      filesToBeCommittedCount > 1
+        ? t('commit.fileCountMany', { count: filesToBeCommittedCount })
+        : t('commit.fileCountOne', { count: filesToBeCommittedCount })
 
-    return `${filesToBeCommittedCount} ${pluralizedFile} `
+    return `${fileCountLabel} `
   }
 
   private getCommittingButtonTitle() {
@@ -1781,7 +1790,11 @@ export class CommitMessage extends React.Component<
 
           <AutocompletingInput
             required={true}
-            label={this.props.showInputLabels === true ? 'Summary' : undefined}
+            label={
+              this.props.showInputLabels === true
+                ? t('commit.summary')
+                : undefined
+            }
             screenReaderLabel="Commit summary"
             className={summaryInputClassName}
             placeholder={placeholder}
@@ -1806,7 +1819,9 @@ export class CommitMessage extends React.Component<
         {this.state.isRuleFailurePopoverOpen && this.renderRuleFailurePopover()}
 
         {this.props.showInputLabels === true && (
-          <label htmlFor="commit-message-description">Description</label>
+          <label htmlFor="commit-message-description">
+            {t('commit.description')}
+          </label>
         )}
         <FocusContainer
           className="description-focus-container"
@@ -1820,7 +1835,7 @@ export class CommitMessage extends React.Component<
                 ? 'Commit description'
                 : undefined
             }
-            placeholder="Description"
+            placeholder={t('commit.description')}
             value={this.state.commitMessage.description || ''}
             onValueChanged={this.onDescriptionChanged}
             autocompletionProviders={

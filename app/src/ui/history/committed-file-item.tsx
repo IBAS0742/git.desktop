@@ -11,6 +11,9 @@ interface ICommittedFileItemProps {
   readonly availableWidth: number
   readonly file: CommittedFileChange
   readonly focused: boolean
+
+  /** The depth of the file within the file tree, zero being the root */
+  readonly depth?: number
 }
 
 export class CommittedFileItem extends React.Component<ICommittedFileItemProps> {
@@ -19,17 +22,27 @@ export class CommittedFileItem extends React.Component<ICommittedFileItemProps> 
     const { status } = file
     const fileStatus = mapStatus(status)
 
+    const depth = this.props.depth ?? 0
     const listItemPadding = 10 * 2
     const statusWidth = 16
     const filePathPadding = 5
+    const treeIndentWidth = depth * 16
     const availablePathWidth =
       this.props.availableWidth -
       listItemPadding -
       filePathPadding -
-      statusWidth
+      statusWidth -
+      treeIndentWidth
 
     return (
       <div className="file">
+        {treeIndentWidth > 0 && (
+          <div
+            className="tree-indent"
+            style={{ width: treeIndentWidth }}
+            aria-hidden={true}
+          />
+        )}
         <PathLabel
           path={file.path}
           status={file.status}

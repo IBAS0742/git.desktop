@@ -85,6 +85,13 @@ interface IAugmentedSectionFilterListProps<T extends IFilterListItem> {
    */
   readonly onItemClick?: (item: T, source: ClickSource) => void
 
+  /**
+   * Determines whether a given item can be selected. Items for which this
+   * returns false will not respond to clicks or keyboard selection, e.g.
+   * directory rows in a tree-structured file list.
+   */
+  readonly isItemSelectable?: (item: T) => boolean
+
   readonly onItemDoubleClick?: (item: T, source: ClickSource) => void
 
   /**
@@ -584,7 +591,12 @@ export class AugmentedSectionFilterList<
     }
 
     const row = this.state.rows[index.section][index.row]
-    return row.kind === 'item'
+
+    if (row.kind !== 'item') {
+      return false
+    }
+
+    return this.props.isItemSelectable?.(row.item) ?? true
   }
 
   private onRowClick = (index: RowIndexPath, source: ClickSource) => {

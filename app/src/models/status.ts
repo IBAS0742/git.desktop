@@ -24,6 +24,7 @@ export enum AppFileStatusKind {
   Renamed = 'Renamed',
   Conflicted = 'Conflicted',
   Untracked = 'Untracked',
+  Ignored = 'Ignored',
 }
 
 /**
@@ -102,12 +103,22 @@ export type UntrackedFileStatus = {
   submoduleStatus?: SubmoduleStatus
 }
 
+/**
+ * Denotes a file (or directory, when the path carries a trailing slash) that
+ * is ignored via .gitignore.
+ */
+export type IgnoredFileStatus = {
+  kind: AppFileStatusKind.Ignored
+  submoduleStatus?: SubmoduleStatus
+}
+
 /** The union of potential states associated with a file change in Desktop */
 export type AppFileStatus =
   | PlainFileStatus
   | CopiedOrRenamedFileStatus
   | ConflictedFileStatus
   | UntrackedFileStatus
+  | IgnoredFileStatus
 
 /** The status of a submodule */
 export type SubmoduleStatus = {
@@ -356,20 +367,29 @@ export class CommittedFileChange extends FileChange {
 export class WorkingDirectoryStatus {
   /** Create a new status with the given files. */
   public static fromFiles(
-    files: ReadonlyArray<WorkingDirectoryFileChange>
+    files: ReadonlyArray<WorkingDirectoryFileChange>,
+    ignoredFiles: ReadonlyArray<WorkingDirectoryFileChange> = []
   ): WorkingDirectoryStatus {
-    return new WorkingDirectoryStatus(files, getIncludeAllState(files))
+    return new WorkingDirectoryStatus(
+      files,
+      ignoredFiles,
+      getIncludeAllState(files)
+    )
   }
 
   private readonly fileIxById = new Map<string, number>()
   /**
    * @param files The list of changes in the repository's working directory.
+   * @param ignoredFiles The list of ignored paths in the repository's working
+   *                     directory. These are not committable changes and are
+   *                     only displayed when the user opts in.
    * @param includeAll Update the include checkbox state of the form.
    *                   NOTE: we need to track this separately to the file list selection
    *                         and perform two-way binding manually when this changes.
    */
   private constructor(
     public readonly files: ReadonlyArray<WorkingDirectoryFileChange>,
+    public readonly ignoredFiles: ReadonlyArray<WorkingDirectoryFileChange>,
     public readonly includeAll: boolean | null = true
   ) {
     files.forEach((f, ix) => this.fileIxById.set(f.id, ix))
@@ -380,7 +400,7 @@ export class WorkingDirectoryStatus {
    */
   public withIncludeAllFiles(includeAll: boolean): WorkingDirectoryStatus {
     const newFiles = this.files.map(f => f.withIncludeAll(includeAll))
-    return new WorkingDirectoryStatus(newFiles, includeAll)
+    return new WorkingDirectoryStatus(newFiles, this.ignoredFiles, includeAll)
   }
 
   /** Find the file with the given ID. */

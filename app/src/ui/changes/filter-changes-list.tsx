@@ -65,21 +65,37 @@ import { IMatches } from '../../lib/fuzzy-find'
 import { TextBox } from '../lib/text-box'
 import { Button } from '../lib/button'
 import { LinkButton } from '../lib/link-button'
-import { plural } from '../lib/plural'
 import {
   isCommittingFileHiddenByFilter,
   getNoResultsMessage,
   hasActiveFilters,
   applyFilters,
+  countActiveFilterOptions,
 } from './filter-changes-logic'
 import { ChangesListFilterOptions } from './changes-list-filter-options'
 import { HookProgress } from '../../lib/git'
 import { formatNumber } from '../../lib/format-number'
+import { buildChangesFileTreeRows, getPathSegments } from '../lib/file-tree'
+import { t } from '../../lib/i18n'
 
 export interface IChangesListItem extends IFilterListItem {
   readonly id: string
   readonly text: ReadonlyArray<string>
-  readonly change: WorkingDirectoryFileChange
+
+  /**
+   * The changed file backing this item or null when the item represents a
+   * directory within the file tree.
+   */
+  readonly change: WorkingDirectoryFileChange | null
+
+  /** The depth of the item within the file tree, zero being the root */
+  readonly depth?: number
+
+  /** Whether this item represents a directory rather than a file */
+  readonly isDirectory?: boolean
+
+  /** Whether this item is ignored via .gitignore (file or directory) */
+  readonly isIgnored?: boolean
 }
 
 const RowHeight = 29
@@ -255,6 +271,9 @@ interface IFilterChangesListState {
   readonly selectedItems: ReadonlyArray<IChangesListItem>
   readonly focusedRow: string | null
   readonly groups: ReadonlyArray<IFilterListGroup<IChangesListItem>>
+
+  /** The paths of the directories the user has collapsed in the file tree */
+  readonly collapsedDirectories: ReadonlySet<string>
 }
 
 function getSelectedItemsFromProps(
@@ -316,7 +335,7 @@ export class FilterChangesList extends React.Component<
       filteredItems: Map<string, IChangesListItem>
     ): CheckboxValue => {
       if (
-        filteredItems.size === workingDirectory.files.length &&
+        this.countFileItems(filteredItems) === workingDirectory.files.length &&
         rebaseConflictState === null
       ) {
         return getCheckBoxValueFromIncludeAll(workingDirectory.includeAll)
@@ -357,7 +376,11 @@ export class FilterChangesList extends React.Component<
   public constructor(props: IFilterChangesListProps) {
     super(props)
 
-    const listItems = this.createListItems(props.workingDirectory.files)
+    const collapsedDirectories = new Set<string>()
+    const listItems = this.createListItems(
+      props.workingDirectory.files,
+      collapsedDirectories
+    )
     const groups = [listItems]
 
     this.state = {
@@ -367,6 +390,7 @@ export class FilterChangesList extends React.Component<
       selectedItems: getSelectedItemsFromProps(props),
       focusedRow: null,
       groups,
+      collapsedDirectories,
     }
   }
 
@@ -378,23 +402,120 @@ export class FilterChangesList extends React.Component<
       !arrayEquals(
         nextProps.workingDirectory.files,
         this.props.workingDirectory.files
-      )
+      ) ||
+      !arrayEquals(
+        nextProps.workingDirectory.ignoredFiles,
+        this.props.workingDirectory.ignoredFiles
+      ) ||
+      this.getFilterMode(nextProps.fileListFilter) !==
+        this.getFilterMode(this.props.fileListFilter) ||
+      nextProps.fileListFilter.showIgnoredFiles !==
+        this.props.fileListFilter.showIgnoredFiles
     ) {
       this.setState({
         selectedItems: getSelectedItemsFromProps(nextProps),
-        groups: [this.createListItems(nextProps.workingDirectory.files)],
+        groups: [
+          this.createListItems(
+            nextProps.workingDirectory.files,
+            this.state.collapsedDirectories,
+            nextProps.fileListFilter
+          ),
+        ],
       })
     }
   }
 
+  /**
+   * Whether we should render the file list as a tree of directories. When
+   * any filter is applied we fall back to the flat list of matching files
+   * since tree rows would otherwise end up in an inconsistent state.
+   */
+  private getFilterMode(filters: IFileListFilterState) {
+    if (filters.filterText !== '') {
+      return 'text'
+    }
+
+    if (countActiveFilterOptions(filters) > 0) {
+      return 'options'
+    }
+
+    return 'none'
+  }
+
   private createListItems(
-    files: ReadonlyArray<WorkingDirectoryFileChange>
+    files: ReadonlyArray<WorkingDirectoryFileChange>,
+    collapsedDirectories: ReadonlySet<string>,
+    filters: IFileListFilterState = this.props.fileListFilter
   ): IFilterListGroup<IChangesListItem> {
-    const items = files.map(file => ({
-      text: [file.path],
-      id: file.id,
-      change: file,
-    }))
+    if (this.getFilterMode(filters) !== 'none') {
+      const items = files.map(file => ({
+        text: [file.path],
+        id: file.id,
+        change: file,
+      }))
+
+      return {
+        identifier: 'changed-files',
+        items,
+      }
+    }
+
+    const ignoredFiles = filters.showIgnoredFiles
+      ? this.props.workingDirectory.ignoredFiles
+      : []
+
+    // Ignored directories are reported by git with a trailing slash and are
+    // rendered as single, non-expandable rows. Ignored individual files slot
+    // into the regular directory tree alongside the changed files.
+    const ignoredDirectoryPaths: string[] = []
+    const ignoredFileChanges: WorkingDirectoryFileChange[] = []
+
+    for (const file of ignoredFiles) {
+      if (file.path.endsWith('/')) {
+        ignoredDirectoryPaths.push(file.path.slice(0, -1))
+      } else {
+        ignoredFileChanges.push(file)
+      }
+    }
+
+    const rows = buildChangesFileTreeRows(
+      [...files, ...ignoredFileChanges],
+      ignoredDirectoryPaths,
+      collapsedDirectories,
+      f => f.path
+    )
+
+    const items: Array<IChangesListItem> = rows.map(row => {
+      if (row.kind === 'directory') {
+        return {
+          text: [row.path],
+          id: `directory:${row.path}`,
+          change: null,
+          isDirectory: true,
+          depth: row.depth,
+        }
+      }
+
+      if (row.kind === 'ignored-directory') {
+        return {
+          text: [row.path],
+          id: `directory:${row.path}`,
+          change: null,
+          isDirectory: true,
+          isIgnored: true,
+          depth: row.depth,
+        }
+      }
+
+      const file = row.file!
+      return {
+        text: [file.path],
+        id: file.id,
+        change: file,
+        isIgnored: file.status.kind === AppFileStatusKind.Ignored,
+        depth: row.depth,
+      }
+    })
 
     return {
       identifier: 'changed-files',
@@ -402,12 +523,60 @@ export class FilterChangesList extends React.Component<
     }
   }
 
+  private onToggleDirectory = (path: string) => {
+    const collapsedDirectories = new Set(this.state.collapsedDirectories)
+
+    if (collapsedDirectories.has(path)) {
+      collapsedDirectories.delete(path)
+    } else {
+      collapsedDirectories.add(path)
+    }
+
+    const group = this.createListItems(
+      this.props.workingDirectory.files,
+      collapsedDirectories
+    )
+
+    this.setState({
+      collapsedDirectories,
+      groups: [group],
+      filteredItems: new Map<string, IChangesListItem>(
+        group.items.map(i => [i.id, i])
+      ),
+    })
+  }
+
+  /** Directory rows in the file tree are not selectable */
+  private isItemSelectable = (item: IChangesListItem) =>
+    item.change !== null && item.isIgnored !== true
+
+  /** The number of items which represent an actual (changed) file */
+  private countFileItems(filteredItems: Map<string, IChangesListItem>) {
+    let count = 0
+    for (const item of filteredItems.values()) {
+      if (item.change !== null && item.isIgnored !== true) {
+        count++
+      }
+    }
+    return count
+  }
+
+  /** Only the items which back an actual file, i.e. without directory rows */
+  private getFileOnlyItems(): Map<string, IChangesListItem> {
+    const items = new Map<string, IChangesListItem>()
+    for (const [id, item] of this.state.filteredItems) {
+      if (item.change !== null && item.isIgnored !== true) {
+        items.set(id, item)
+      }
+    }
+    return items
+  }
+
   private onIncludeAllChanged = (event: React.FormEvent<HTMLInputElement>) => {
     const include = event.currentTarget.checked
-    const filteredItemPaths = Array.from(
-      this.state.filteredItems,
-      ([, v]) => v.change
-    )
+    const filteredItemPaths = Array.from(this.state.filteredItems.values())
+      .filter(item => item.change !== null && item.isIgnored !== true)
+      .map(item => item.change!)
     this.props.onIncludeChanged(filteredItemPaths, include)
   }
 
@@ -421,6 +590,10 @@ export class FilterChangesList extends React.Component<
       onIncludeChanged,
       availableWidth,
     } = this.props
+
+    if (changeListItem.change === null) {
+      return this.renderDirectoryRow(changeListItem)
+    }
 
     const file = changeListItem.change
     const selection = file.selection.getSelectionType()
@@ -462,6 +635,7 @@ export class FilterChangesList extends React.Component<
     return (
       <ChangedFile
         file={file}
+        depth={changeListItem.depth ?? 0}
         include={isPartiallyCommittableSubmodule && include ? null : include}
         key={file.id}
         onIncludeChanged={onIncludeChanged}
@@ -470,8 +644,68 @@ export class FilterChangesList extends React.Component<
         checkboxTooltip={checkboxTooltip}
         focused={this.state.focusedRow === changeListItem.id}
         matches={matches}
+        isIgnored={changeListItem.isIgnored === true}
+        showOnlyFilename={changeListItem.depth !== undefined}
       />
     )
+  }
+
+  private renderDirectoryRow = (item: IChangesListItem): JSX.Element => {
+    const path = item.text[0]
+    const isCollapsed = this.state.collapsedDirectories.has(path)
+    const segments = getPathSegments(path)
+    const name = segments[segments.length - 1] ?? path
+
+    if (item.isIgnored === true) {
+      return (
+        <div
+          className="file tree-directory tree-directory-ignored"
+          style={{
+            paddingLeft: `calc(var(--spacing) + ${(item.depth ?? 0) * 16}px)`,
+          }}
+        >
+          <Octicon
+            symbol={octicons.fileDirectoryFill}
+            className="tree-directory-icon"
+          />
+          <span className="tree-directory-name">{name}</span>
+          <span className="ignored-badge">Ignored</span>
+        </div>
+      )
+    }
+
+    return (
+      <button
+        type="button"
+        className="file tree-directory"
+        style={{
+          paddingLeft: `calc(var(--spacing) + ${(item.depth ?? 0) * 16}px)`,
+        }}
+        data-path={path}
+        onClick={this.onDirectoryRowClick}
+        aria-expanded={!isCollapsed}
+      >
+        <Octicon
+          symbol={isCollapsed ? octicons.chevronRight : octicons.chevronDown}
+          className="tree-toggle"
+        />
+        <Octicon
+          symbol={octicons.fileDirectoryFill}
+          className="tree-directory-icon"
+        />
+        <span className="tree-directory-name">{name}</span>
+      </button>
+    )
+  }
+
+  private onDirectoryRowClick = (
+    event: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    const path = event.currentTarget.dataset['path']
+
+    if (path !== undefined) {
+      this.onToggleDirectory(path)
+    }
   }
 
   private onDiscardAllChanges = () => {
@@ -836,13 +1070,64 @@ export class FilterChangesList extends React.Component<
     return items
   }
 
+  /** The context menu shown for directory rows in the file tree */
+  private getDirectoryContextMenu(path: string): ReadonlyArray<IMenuItem> {
+    // Even on Windows, the path separator is '/' for git operations so cannot
+    // use Path.sep
+    const pathComponents = path.split('/')
+    const submenu = pathComponents.map((_, index) => {
+      const label = `/${pathComponents
+        .slice(0, pathComponents.length - index)
+        .join('/')}`
+      return {
+        label,
+        action: () => this.props.onIgnoreFile(label),
+      }
+    })
+
+    return [
+      {
+        label: __DARWIN__
+          ? 'Ignore Folder (Add to .gitignore)'
+          : 'Ignore folder (add to .gitignore)',
+        submenu,
+      },
+      { type: 'separator' },
+      {
+        label: CopyFilePathLabel,
+        action: () => {
+          writeClipboardText(Path.join(this.props.repository.path, path))
+        },
+      },
+      {
+        label: CopyRelativeFilePathLabel,
+        action: () => writeClipboardText(Path.normalize(path)),
+      },
+    ]
+  }
+
   private onItemContextMenu = (
     item: IChangesListItem,
     event: React.MouseEvent<HTMLDivElement>
   ) => {
+    if (this.props.isCommitting || item.isIgnored === true) {
+      return
+    }
+
     const file = item.change
 
-    if (this.props.isCommitting) {
+    if (file === null) {
+      // Directory rows get their own context menu so folders can be ignored
+      // directly from the tree.
+      if (
+        item.isDirectory !== true ||
+        this.props.rebaseConflictState !== null
+      ) {
+        return
+      }
+
+      event.preventDefault()
+      showContextualMenu(this.getDirectoryContextMenu(item.text[0]))
       return
     }
 
@@ -861,7 +1146,7 @@ export class FilterChangesList extends React.Component<
     prepopulateCommitSummary: boolean
   ) {
     if (!prepopulateCommitSummary) {
-      return 'Summary (required)'
+      return t('commit.summaryRequired')
     }
 
     const firstFile = files[0]
@@ -945,7 +1230,7 @@ export class FilterChangesList extends React.Component<
       this.props.askForConfirmationOnCommitFilteredChanges &&
       isCommittingFileHiddenByFilter(
         filesSelected.map(f => f.id),
-        this.state.filteredItems,
+        this.getFileOnlyItems(),
         fileCount,
         this.props.fileListFilter
       )
@@ -1123,13 +1408,17 @@ export class FilterChangesList extends React.Component<
         }
       >
         <Octicon className="stack-icon" symbol={StashIcon} />
-        <div className="text">Stashed Changes</div>
+        <div className="text">{t('changes.stashedChanges')}</div>
         <Octicon symbol={octicons.chevronRight} />
       </button>
     )
   }
 
   private onChangedFileDoubleClick = (item: IChangesListItem) => {
+    if (item.change === null || item.isIgnored === true) {
+      return
+    }
+
     this.props.onOpenItemInExternalEditor(item.change.path)
   }
 
@@ -1162,6 +1451,10 @@ export class FilterChangesList extends React.Component<
     item: IChangesListItem,
     source: ClickSource
   ) => {
+    if (item.change === null || item.isIgnored === true) {
+      return
+    }
+
     const fileIndex = this.props.workingDirectory.findFileIndexByID(
       item.change.id
     )
@@ -1186,9 +1479,9 @@ export class FilterChangesList extends React.Component<
   }
 
   private onFileSelectionChanged = (items: ReadonlyArray<IChangesListItem>) => {
-    const rows = items.map(i =>
-      this.props.workingDirectory.findFileIndexByID(i.change.id)
-    )
+    const rows = items
+      .filter(i => i.change !== null && i.isIgnored !== true)
+      .map(i => this.props.workingDirectory.findFileIndexByID(i.change!.id))
     this.props.onFileSelectionChanged(rows)
   }
 
@@ -1249,7 +1542,7 @@ export class FilterChangesList extends React.Component<
     const { workingDirectory, rebaseConflictState, isCommitting } = this.props
     const { files } = workingDirectory
 
-    const visibleFiles = this.state.filteredItems.size
+    const visibleFiles = this.countFileItems(this.state.filteredItems)
 
     const includeAllValue = this.getCheckAllValue(
       workingDirectory,
@@ -1260,10 +1553,13 @@ export class FilterChangesList extends React.Component<
     const disableAllCheckbox =
       files.length === 0 || isCommitting || rebaseConflictState !== null
 
+    const fileLabel =
+      files.length === 1 ? t('changes.fileSingular') : t('changes.filePlural')
+
     const checkAllLabel = `${
       visibleFiles !== files.length ? `${formatNumber(visibleFiles)} of ` : ''
     }
-    ${formatNumber(files.length)} changed file${plural(files.length)}`
+    ${formatNumber(files.length)} ${fileLabel}`
 
     return (
       <div className="checkbox-container">
@@ -1276,7 +1572,33 @@ export class FilterChangesList extends React.Component<
           className="changes-list-check-all"
           label={checkAllLabel}
         />
+        {this.renderRefreshButton()}
       </div>
+    )
+  }
+
+  /**
+   * Manually reloads the repository status, e.g. after editing .gitignore
+   * outside of the app. Deliberately user-initiated rather than automatic so
+   * the list never jumps around on its own.
+   */
+  private onRefreshClick = () => {
+    this.props.dispatcher.refreshRepository(this.props.repository)
+  }
+
+  private renderRefreshButton = () => {
+    return (
+      <button
+        type="button"
+        className="changes-list-refresh-button"
+        onClick={this.onRefreshClick}
+        aria-label={t('changes.refresh')}
+        disabled={
+          this.props.isCommitting || this.props.rebaseConflictState !== null
+        }
+      >
+        <Octicon symbol={octicons.sync} />
+      </button>
     )
   }
 
@@ -1296,6 +1618,7 @@ export class FilterChangesList extends React.Component<
             onFilterDeletedFiles={this.onFilterDeletedFiles}
             onFilterModifiedFiles={this.onFilterModifiedFiles}
             onFilterNewFiles={this.onFilterNewFiles}
+            onFilterShowIgnoredFiles={this.onFilterShowIgnoredFiles}
             onClearAllFilters={this.onClearAllFilters}
             workingDirectory={this.props.workingDirectory}
           />
@@ -1303,7 +1626,7 @@ export class FilterChangesList extends React.Component<
         <TextBox
           ref={this.onTextBoxRef}
           displayClearButton={true}
-          placeholder={'Filter'}
+          placeholder={t('changes.filter')}
           className="filter-list-filter-field"
           onValueChanged={this.onFilterTextChanged}
           onKeyDown={this.onFilterKeyDown}
@@ -1323,7 +1646,9 @@ export class FilterChangesList extends React.Component<
 
   private getListAriaLabel = () => {
     const { files } = this.props.workingDirectory
-    return `${formatNumber(files.length)} changed file${plural(files.length)}`
+    const fileLabel =
+      files.length === 1 ? t('changes.fileSingular') : t('changes.filePlural')
+    return `${formatNumber(files.length)} ${fileLabel}`
   }
 
   public render() {
@@ -1376,6 +1701,7 @@ export class FilterChangesList extends React.Component<
                 this.props.fileListFilter.isExcludedFromCommit,
             }}
             onItemContextMenu={this.onItemContextMenu}
+            isItemSelectable={this.isItemSelectable}
             renderCustomFilterRow={this.renderFilterRow}
             getGroupAriaLabel={this.getListAriaLabel}
             renderNoItems={this.renderNoChanges}
@@ -1400,7 +1726,7 @@ export class FilterChangesList extends React.Component<
     if (
       !isCommittingFileHiddenByFilter(
         filesSelected.map(f => f.id),
-        this.state.filteredItems,
+        this.getFileOnlyItems(),
         files.length,
         this.props.fileListFilter
       )
@@ -1438,7 +1764,7 @@ export class FilterChangesList extends React.Component<
       <div className="no-changes-filtered">
         <img src={BlankSlateImage} className="blankslate-image" alt="" />
 
-        <div className="title">No files match your current filters</div>
+        <div className="title">{t('changes.noFilesMatch')}</div>
 
         <div className="subtitle">
           {getNoResultsMessage(this.props.fileListFilter)}
@@ -1449,7 +1775,7 @@ export class FilterChangesList extends React.Component<
             className="clear-filters-button"
             onClick={this.onClearAllFilters}
           >
-            Clear filters
+            {t('changes.clearFilters')}
           </Button>
         )}
       </div>
@@ -1511,6 +1837,13 @@ export class FilterChangesList extends React.Component<
     this.props.dispatcher.setFilterExcludedFiles(
       this.props.repository,
       !this.props.fileListFilter.isExcludedFromCommit
+    )
+  }
+
+  private onFilterShowIgnoredFiles = () => {
+    this.props.dispatcher.setShowIgnoredFiles(
+      this.props.repository,
+      !this.props.fileListFilter.showIgnoredFiles
     )
   }
 

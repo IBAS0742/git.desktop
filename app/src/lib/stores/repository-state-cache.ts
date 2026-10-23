@@ -391,6 +391,7 @@ function getInitialRepositoryState(): IRepositoryState {
         isModifiedFile: false,
         isDeletedFile: false,
         isExcludedFromCommit: false,
+        showIgnoredFiles: false,
       },
     },
     selectedSection: RepositorySectionTab.Changes,
